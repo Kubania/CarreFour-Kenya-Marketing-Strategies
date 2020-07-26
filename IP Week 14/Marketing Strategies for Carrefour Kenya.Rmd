@@ -1,0 +1,442 @@
+---
+title: "Marketing Strategies for Carrefour Kenya"
+author: "Mercy M. Kubania"
+date: "7/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem Statement
+> As a Data analyst at Carrefour Kenya I am doing a project that will inform the marketing department on the most relevant marketing strategies that will result in the highest no. of sales (total price including tax). 
+
+## a)Specifying the Question
+1. Build models that will inform on relevant marketing strategies that will result in the highest no. of sales (total price including tax) for the Marketing Department at CarreFour Kenya
+
+## b)The Metric of Success
+> Analyse the data and Build a model that will inform on the relevant marketing strategies for the Marketing Department
+
+## c)The Context
+> Working on the CarreFour Kenya Sales data to identify the most relevant marketing strategies
+
+
+## d)Experimental Design
+1. Source the Data
+2. Load the Data
+3. Check the Data and Clean it
+4. Perform Exploratory Data Analysis
+5. Implement the Solution
+6. Challenge the Solution
+
+# Data Sourcing
+```{r Dimension and Feature Data}
+# Data for Analysis, Dimension Reduction and Feature Selection
+
+sales <- read.csv("~/Documents/R markdowns/IP Week 14/Supermarket_Dataset_1 - Sales Data.csv")
+head(sales)
+
+```
+
+
+
+
+# Check the Data
+```{r Dimensions}
+dim(sales)
+
+```
+```{r Structure}
+str(sales)
+
+```
+```{r Categorical Var}
+#Check their unique value counts
+table(sales$Branch)
+table(sales$Customer.type)
+table(sales$Gender)
+table(sales$Product.line)
+table(sales$Payment)
+
+#Convert to Factor
+library(dplyr)
+
+sales <- mutate_at(sales, vars(Branch, Customer.type,Gender,Product.line,Payment), as.factor)
+
+str(sales)
+
+```
+
+
+# Data Cleaning
+```{r Drop Irrelevant Columns}
+# Droppig the Invoice Column
+sales_new <- sales[,-1]
+head(sales_new)
+
+```
+```{r Lower Case Columns}
+
+# Lower Casing the Column Names
+lower <- function(x) {
+    colnames(x) <- tolower(colnames(x))
+    x
+}
+
+sales_new <- lower(sales_new)
+
+head(sales_new)
+
+```
+
+```{r Missing Data}
+# check missing data
+colSums(is.na(sales_new))
+
+# No missing data
+```
+```{r Duplicated}
+# Cheking for Duplicated records
+sales_new <- unique(sales_new)
+dim(sales_new)
+```
+```{r Outliers}
+# Check for outliers
+num_col <- sales_new[, c(5,6,7,11,12,13,14,15)]
+outlier_detection = function(x){
+  for(i in colnames(x)){
+    boxplot(sales_new[[i]], xlab=i, main=paste0("Boxplot for ",i))
+  }
+}
+
+outlier_detection(num_col)
+```
+```{r Dealing with Outliers}
+# replace outliers with the 5th and 95th percentile
+outlier_replace <- function(x){
+   qnt <- quantile(x, probs=c(.25, .75), na.rm = T)
+   caps <- quantile(x, probs=c(.05, .95), na.rm = T)
+   H <- 1.5 * IQR(x, na.rm = T)
+   x[x < (qnt[1] - H)] <- caps[1]
+   x[x > (qnt[2] + H)] <- caps[2]
+   return(x)
+}
+
+
+sales_new$tax <-outlier_replace(sales_new$tax)
+sales_new$cogs <- outlier_replace(sales_new$cogs)
+sales_new$gross.income <- outlier_replace(sales_new$gross.income)
+sales_new$total <- outlier_replace(sales_new$total)
+
+outlier_detection(num_col)
+
+
+```
+The Data had 1000 records and 16 columns
+* 6 Categorical Variables
+* 11 Numeric Variables
+
+The Invoice.Id column was dropped because it was necessary for Analysis and all the columns were set to lower case for easier implementation
+There are no missing values or duplicated values in our data set
+
+Categorical Variables were converted to Factors which were:-
+
+1. Branch
+2. Customer Type
+3. Gender
+4. Product Line
+5. Payment
+
+In the Numeric variables there were outliers in:-
+
+1. Tax
+2. Total
+3. Cogs
+4. Gross_Income
+
+Where the outliers were replaced by the 5th and 95th percentile
+
+
+# Perform Exploratory Data Analysis
+## Univariate
+### Categorical Variables
+```{r Categorical BarPLots}
+library(ggplot2)
+
+# Customer Type
+customer_type <- ggplot(sales_new ,aes(x=customer.type , fill=customer.type)) + geom_bar() + labs(title = "Distribution of the Customer Types", x="Customer Type")
+customer_type +scale_fill_discrete(name = "Customer Type") 
+
+# How many Branches we have
+bran <- ggplot(sales_new, aes(x=branch, fill=branch)) + geom_bar()+labs(title = "Distribution of Branches", x="Branches")+scale_fill_discrete(name = "Branch") 
+bran
+
+# Gender Distribution
+gender1 <- ggplot(sales_new, aes(x=gender, fill=gender)) + geom_bar()+labs(title = "Distribution of Gender", x="Gender")+scale_fill_discrete(name = "Gender") 
+gender1
+
+# Types Product Line
+product_line <- ggplot(sales_new,aes(x=product.line, fill=product.line))+ geom_bar()+ labs(title = "Distribution of Product Line", x="Product Line")+ scale_fill_discrete(name = "Product Line")
+product_line + theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+# Types Payments
+payment_meth <- ggplot(sales_new, aes(x=payment, fill=payment)) + geom_bar()+labs(title = "Distribution of Payments", x="Payment")+scale_fill_discrete(name = "Payment") 
+payment_meth
+
+# Which Product line was bought more in terms of quantity per branch
+product_line1 <- ggplot(sales_new,aes(x=product.line,y=quantity,fill=product.line))+geom_bar(stat = "identity")+ facet_wrap(~branch, scales = "free") + labs(title = "Total Quantity of each Product Line", subtitle = "[per Branch]",x="Product Line", y="Total Quantity") + scale_fill_discrete(name = "Product Line") + theme(axis.title.x=element_blank(),
+            axis.text.x=element_blank(),
+            axis.ticks.x=element_blank())
+
+product_line1
+
+# Customer Type per Branch
+customer_type1 <- ggplot(sales_new, aes(x=branch, fill=customer.type)) + geom_bar(position = "dodge")+labs(title = "Distribution of Customer Type per Branch", x="Payment")+scale_fill_discrete(name = " Customer Type") 
+customer_type1
+
+# Gender per Branch
+gender2 <- ggplot(sales_new, aes(x=branch, fill=gender)) + geom_bar(position = "dodge")+labs(title = "Distribution of Gender per Branch", x="Branch")+scale_fill_discrete(name = "Gender") 
+gender2
+
+# Mode of Payment per Branch
+payment_meth1 <- ggplot(sales_new, aes(x=branch, fill=payment)) + geom_bar(position = "dodge")+labs(title = "Distribution of Payment Mode per Branch", x="Branch")+scale_fill_discrete(name = "Payment") 
+payment_meth1
+
+# Customer Type and Mode of Payment
+customer_type2 <- ggplot(sales_new, aes(x=customer.type, fill=payment)) + geom_bar(position = "dodge")+labs(title = "Customer Type and Mode of Payment", x="Customer Type")+scale_fill_discrete(name = "Mode of Payment") 
+customer_type2
+
+# Customer Type and Product Line
+product_line2 <- ggplot(sales_new, aes(x=product.line, fill=customer.type)) + geom_bar(position = "dodge")+labs(title = "Distribution of Product Line for Each Customer Type", x="Product Line")+scale_fill_discrete(name = "Customer Type") 
+product_line2 +theme(axis.text.x = element_text(angle = 30, hjust=0.8))
+
+# Product Line vs Gender
+product_line3 <- ggplot(sales_new, aes(x=product.line, fill=gender)) + geom_bar(position = "dodge")+labs(title = "Distribution of Product Line in Each Gender", x="Product Line")+scale_fill_discrete(name = "Gender") 
+product_line3 +theme(axis.text.x = element_text(angle = 30, hjust=0.8))
+ 
+```
+### Numeric Variables
+```{r Summary Stats, message=FALSE}
+library(Hmisc)
+describe(num_col)
+
+```
+```{r Histogram}
+
+histogram = function(x){
+  for(i in colnames(x)){
+    hist(sales_new[[i]], breaks = 10,main =i,xlab = i,col = "dodgerblue")
+  }
+}
+
+histogram(num_col)
+```
+
+
+## Bivariate
+### Correlation
+```{r Label Encoding}
+# Label Encode Categorical Variables
+encode_ordinal <- function(x, order = unique(x)) {
+  x <- as.numeric(factor(x, levels = order, exclude = NULL))
+  x
+}
+table(sales_new$branch, encode_ordinal(sales_new$branch))
+table(sales_new$customer.type,encode_ordinal(sales_new$customer.type))
+table(sales_new$gender, encode_ordinal(sales_new$gender))
+table(sales_new$product.line, encode_ordinal(sales_new$product.line))
+table(sales_new$payment, encode_ordinal(sales_new$payment))
+
+sales_new$branch_enc <- encode_ordinal(sales_new$branch)
+sales_new$customer.type_enc <- encode_ordinal(sales_new$customer.type)
+sales_new$gender_enc <- encode_ordinal(sales_new$gender)
+sales_new$product.line_enc <- encode_ordinal(sales_new$product.line)
+sales_new$payment_enc <- encode_ordinal(sales_new$payment)
+
+head(sales_new)
+```
+
+```{r Correlation}
+
+# the correlation matrix
+feat <- sales_new[, c(-1,-2,-3,-4,-8,-9,-10,-12)]
+#head(feat)
+
+correlation_matrix <- cor(feat)
+library(corrplot)
+corr_data <- as.data.frame(correlation_matrix)
+corr_data
+
+corr <- corrplot(correlation_matrix, method = "shade",order = "hclust", col=colorRampPalette(c("yellow","green","navyblue"))(100), addgrid.col="gray", tl.col = "black", tl.cex = 0.7,tl.srt = 45)
+```
+
+### Graph Analysis
+```{r Categorical on Numeric, message=FALSE}
+# Which Branch received the highest Average rating
+
+by_rate <- sales_new %>%
+  group_by(branch) %>%
+  summarise(rate = mean(rating))
+
+rate <- ggplot(by_rate, aes(x=branch, y= rate, fill=branch))+geom_bar(stat = "identity")+ labs(title = "Average Rating Per Branch", x="Branch",y="Average Rating")
+rate + scale_fill_brewer(palette="Set1")+theme(legend.position = "none") 
+
+# Product Line with Highest Gross Income
+by_gross <- sales_new %>%
+  group_by(product.line) %>%
+  summarise(gross = sum(gross.income))
+
+
+gross_inc <- ggplot(by_gross, aes(x=product.line, y= gross, fill=product.line))+geom_bar(stat = "identity")+ labs(title = "Product Line vs Gross Income", x="Product Line",y="Total Gross Income")
+gross_inc + scale_fill_brewer(name="Product Line",palette="Set1")+theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+# Total Sales for Each Product Line
+by_sale <- sales_new %>%
+  group_by(product.line) %>%
+  summarise(total = sum(total))
+
+
+total_sale <- ggplot(by_sale, aes(x=product.line, y= total, fill=product.line))+geom_bar(stat = "identity")+ labs(title = "Total Sales from Each Product Line", x="Product Line",y="Total Sales")
+total_sale + scale_fill_brewer(name="Product Line",palette="Set1")+theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+# Which Customer Type Generates more Gross Income
+by_cust <- sales_new %>%
+  group_by(customer.type) %>%
+  summarise(gross = sum(gross.income))
+
+cust_type <- ggplot(by_cust, aes(x=customer.type, y= gross, fill=customer.type))+geom_bar(stat = "identity")+ labs(title = " Total Gross Income per Customer Type", x="Customer Type",y="Total Gross Income")
+cust_type + scale_fill_brewer( name= "Customer Type",palette="Set1")+theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+# Branch with the Highest Gross Income
+by_branch <- sales_new %>%
+  group_by(branch) %>%
+  summarise(gross = sum(gross.income))
+
+branch_gross <- ggplot(by_branch, aes(x=branch, y= gross, fill=branch))+geom_bar(stat = "identity")+ labs(title = " Total Gross Income per Branch", x="Branch",y="Total Gross Income")
+branch_gross + scale_fill_brewer(name="Branch",palette="Set1")+theme(
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+# Monthly Gross Income
+
+sales_new$date <- as.Date(sales_new$date, format = "%m/%d/%Y")
+
+by_date <- sales_new %>%
+  group_by(date, branch) %>%
+  summarise(gross = sum(gross.income))
+
+
+month_gross <- ggplot(by_date, aes(x=date, y=gross)) +geom_line(color="blue") + labs(title = " Monthly Total Gross Income per Branch", x="",y="Total Gross Income")+facet_wrap(~branch, scales = "free_x", ncol=2)
+month_gross
+
+
+```
+```{r Scatter Plot}
+plot(sales_new$gross.income, sales_new$cogs, main = "Relationship between COGS and Gross Income", xlab="Gross Income", ylab="COGS")
+
+plot(sales_new$total, sales_new$gross.income, main = "Total Sales vs. Gross Income ", xlab = "Total Sales", ylab = "Gross Income")
+
+plot(sales_new$total, sales_new$rating, main = "Total Sales vs. Rating", xlab = "Total Sales", ylab = "Rating")
+```
+
+
+
+# Implement the Solution
+## Dimension Reduction
+
+```{r PCA}
+# PCA
+
+# Features
+predictors <- sales_new[, c(-1,-2,-3,-4,-8,-9,-10,-12,-15)]
+
+sales.pca <- prcomp(predictors, scale. = TRUE, center = TRUE)
+summary(sales.pca)
+
+label <- sales_new[, "total"]
+head(label)
+
+library(ggbiplot)
+ggbiplot(sales.pca, obs.scale = 1.2,var.scale=1.3)
+ggbiplot(sales.pca, choices = c(3,4) ,obs.scale = 1.2, var.scale = 1.3)
+
+
+```
+
+## Feature Selection
+```{r Filter Method}
+library(caret)
+
+correlation = cor(predictors)
+
+highly <- findCorrelation(correlation, cutoff = 0.75)
+# highly correlated variables
+names(predictors[,highly])
+
+# Dataset without the Highly Correlated
+sales_new1 <- predictors[-highly]
+
+#Plot
+par(mfrow = c(1, 2))
+corrplot(correlation, order = "hclust",tl.col = "black", tl.cex = 0.7)
+corrplot(cor(sales_new1), order = "hclust",tl.col = "black", tl.cex = 0.7)
+
+```
+```{r Wrapper Method}
+library(clustvarsel)
+library(mclust)
+
+# perfectly correlated features
+
+predictors_corr <- predictors[,c(-3,-4,-5)]
+
+out = clustvarsel(predictors_corr, G=1:9)
+out
+
+# Features selected
+data <- predictors_corr[,out$subset]
+head(data)
+```
+
+```{r Ensemble Methods}
+library("wskm")
+library("cluster")
+
+set.seed(2)
+model <- ewkm(predictors, centers=5, lambda=5, maxiter=1000)
+
+summary(model)
+
+clusplot(predictors, model$cluster, color=TRUE, shade=TRUE,
+         labels=5, lines=0,main='Cluster Analysis for Sales')
+
+round(model$weights*100,2)
+
+```
+
+```{r Feature Ranking}
+# Feature Ranking
+
+# Removed Perfectly Correlated Variables
+library(FSelector)
+
+head(sales_new)
+
+predictors1 <- sales_new[, c(-1,-2,-3,-4,-8,-9,-10,-11,-12,-13)]
+
+Scores <- linear.correlation(total~., predictors1)
+Scores
+
+```
+
+# Challenge the Solution

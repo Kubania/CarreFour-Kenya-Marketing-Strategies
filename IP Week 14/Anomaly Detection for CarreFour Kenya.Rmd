@@ -1,0 +1,77 @@
+---
+title: "Anomaly Detection"
+author: "Mercy M. Kubania"
+date: "7/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Problem Definition
+> As a Data analyst at Carrefour Kenya I am doing a project that will inform the marketing department on the most relevant marketing strategies that will result in the highest no. of sales (total price including tax). 
+
+## a) Specifying the Question
+
+1. Identify Anomalies in the Sales Data
+
+## b) Metric of Success
+> Able to detect Fraud
+
+## c) The Context
+Working on the CarreFour Kenya Sales data to identify Fraud in their Sales Data
+
+## d) Experimental Design
+1. Source the Data
+2. Load the Data
+3. Check the Data and Clean it
+4. Perform Exploratory Data Analysis
+5. Implement the Solution
+6. Challenge the Solution
+
+# Data Sourcing
+```{r Anomaly Data}
+# Data to Detect Anomaly
+sales <- read.csv("~/Documents/R markdowns/IP Week 14/Supermarket_Sales_Forecasting - Sales.csv")
+
+head(sales)
+```
+
+
+# Check the Data
+```{r Structure}
+str(sales)
+
+```
+```{r Missing Data}
+anyNA(sales)
+colSums(is.na(sales))
+
+```
+
+```{r Convert to a Tibble, message=TRUE}
+# Convert the data into Tibble and
+
+library(tidyverse)
+library(lubridate)
+
+#
+sales$Date <- as.Date(sales$Date, "%m/%d/%Y")
+
+sales_forecast[order(sales_forecast$Date),]
+
+
+```
+
+# Data Cleaning
+
+# Implement the Solution
+```{r Anomaly Detection}
+
+sales_anomaly <- sales_forecast %>%
+  time_decompose(Sales)
+```
+
+# Challenge the Solution
