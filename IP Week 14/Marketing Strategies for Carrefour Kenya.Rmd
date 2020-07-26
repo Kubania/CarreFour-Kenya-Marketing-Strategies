@@ -134,6 +134,7 @@ outlier_detection(num_col)
 
 ```
 The Data had 1000 records and 16 columns
+
 * 6 Categorical Variables
 * 11 Numeric Variables
 
@@ -349,6 +350,79 @@ plot(sales_new$total, sales_new$gross.income, main = "Total Sales vs. Gross Inco
 plot(sales_new$total, sales_new$rating, main = "Total Sales vs. Rating", xlab = "Total Sales", ylab = "Rating")
 ```
 
+In the Univariate Analysis we observed the following:-
+
+Customer Type were only 2 types, and the both had equal distribution as well as the Gender
+The most popular Branch is Branch A, B then C but the difference between the two is very minimal.
+In Product Line, the *Fashion Accessories* were the most popular product line, followed by *Food & Beverages*, *Electronic Accessories* 
+The most popular mode of Payment is through the E-Wallet
+
+In the Branches there were also interesting observations, in Branch A the most popular Product Line are:-
+
+1. Home & Lifestyle
+2. Sports & Travel
+3. Electronic Accessories
+
+In Branch B we have:
+
+1. Sports & Travel and Health & Beauty
+2. Electronic Accessories
+
+In Branch C we have:
+
+1. Food & Beverages
+2. Fashion & Accessories
+3. Electronic Accessories
+
+In terms of Most frequent Customer Types in the Branches we have
+
+Branch A -> Has more Normal Customers than Members \n
+Branch B -> Has more Normal Customers than Members, but the difference is slight \n
+Branch C -> Has more Members than Normal Customers
+
+In terms of the gender we see that 
+
+Branch A -> Has more Males than Female Customers \n
+Branch B -> Has more Males than Female Customers \n
+Branch C -> Has more Females than Male Customers
+
+This observations gives us interesting insights, we have the most popular Product Line in Branch A and B is mostly Sports & Travel and Electronics Accessories while the most frequent customers in this Branches are Male Customers and the most frequent Customer Type in this Branches are Normal Customers. 
+
+We can say that in Branch A and B we have more Male Customers who are not members, Marketing team can look into targeting these customers in making them Members to establish a permanent relationship and also look into targeting Female Customers in this branches
+
+In Branches C, we have more Female Customers with most bought products being Food & Beverages and Fashion Accessories, the most popular Customer Types are Members, therefore the Marketing Team can look into what influences the Female Customers in Branch C and apply it to Branch A and b
+The Team can do the same for Branch C, look into what influences customers in Branch A and B and apply it.
+Further Analysis can be done on the specific Braches to see what insights we can draw from their customer behaviors
+
+In Branch A the most popular mode of Payment is Ewallet then cash. In Branch B, the most of Payment is EWallet, In Branch C we have Cash as the mode Payment.
+Members Mostly use Credit Card and Normal Customers use EWallet. 
+
+In Histogram there are no numeric columns are normally distributed.
+
+The Categorical variables were encoded using Ordinal Encoding and created new columns.
+
+In the Correlation we see that the features:-
+
+1. Cogs
+2. Total
+3. Gross Income
+
+were perfectly correlated with a correlation of 1
+
+In the assumption that rating was done for Branch, we see that Branch C has the highest average Rating
+The Product Line with the Highest Gross Income:-
+
+1. Food & Beverages
+2. Sports & Travels
+3. Electronic Accessories
+
+The Marketing and Sales can look into the Product Lines so as to develop marketing strategies for those other Product Lines
+
+We see that in between the Months Beginning of January in all Branches have low Total Gross Income but Mid January towards the Beginning of February there is relatively Highly Gross Income.
+
+At the end of  March the Total Gross Income lowers except for Branch B where it starts to pick up
+
+In Branch B between End of January and Beginning of March there is relatively High Total Gross Income
 
 
 # Implement the Solution
@@ -364,7 +438,6 @@ sales.pca <- prcomp(predictors, scale. = TRUE, center = TRUE)
 summary(sales.pca)
 
 label <- sales_new[, "total"]
-head(label)
 
 library(ggbiplot)
 ggbiplot(sales.pca, obs.scale = 1.2,var.scale=1.3)
@@ -408,21 +481,6 @@ data <- predictors_corr[,out$subset]
 head(data)
 ```
 
-```{r Ensemble Methods}
-library("wskm")
-library("cluster")
-
-set.seed(2)
-model <- ewkm(predictors, centers=5, lambda=5, maxiter=1000)
-
-summary(model)
-
-clusplot(predictors, model$cluster, color=TRUE, shade=TRUE,
-         labels=5, lines=0,main='Cluster Analysis for Sales')
-
-round(model$weights*100,2)
-
-```
 
 ```{r Feature Ranking}
 # Feature Ranking
@@ -432,11 +490,49 @@ library(FSelector)
 
 head(sales_new)
 
-predictors1 <- sales_new[, c(-1,-2,-3,-4,-8,-9,-10,-11,-12,-13)]
+predictors1 <- sales_new[, c(-1,-2,-3,-4,-7,-8,-9,-10,-11,-12,-13)]
 
 Scores <- linear.correlation(total~., predictors1)
 Scores
 
+# Selected Features
+Subset <- cutoff.k(Scores, 5)
+as.data.frame(Subset)
+
 ```
 
-# Challenge the Solution
+
+The Problem we are tackling is Regression problem with the *label* being the *Total Column* and for Dimension Reduction Principal Component Analysis was used and there were 11 Principal Components generated and PC1 to PC6 are able to explain 84% of the variations in the data.
+
+The Categorical Variables were encoded through Ordinal Encoding and new columns were created.
+In Feature Selection the different methods were used.
+In Filter Methods with a cutoff at 0.7, the variables accepted were:
+
+1. Branch
+2. Customer Type
+3. Gender
+4. Product Line
+5. Payment
+6. Unit Price
+7. Quantity
+8. Gross Income
+9. Rating
+
+
+Excluding the Total column for it the Label column
+
+The Wrapper method selected, it excluded the perfectly correlated features and it returned
+
+1. Quantity
+2. Payment
+
+The Feature Ranking while excluding the perfectly correlated features were:
+
+1. Quantity
+2. Unit Price
+3. Gender
+4. Product Line
+5. Rating
+
+
+When building an Unsupervised or Supervised model to predict on Total Sales the Features generated by each of the methods could be used and see which group of Features will generate the best accuracy

@@ -55,23 +55,40 @@ colSums(is.na(sales))
 # Convert the data into Tibble and
 
 library(tidyverse)
-library(lubridate)
+library(tibbletime)
 
-#
 sales$Date <- as.Date(sales$Date, "%m/%d/%Y")
 
-sales_forecast[order(sales_forecast$Date),]
-
+sales_ts = sales %>%
+  as.tibble() %>%
+  as_tbl_time(Date) %>%
+  arrange(Date) %>%
+  as_period("daily")
 
 ```
 
 # Data Cleaning
+```{r Missing Values}
+anyNA(sales_ts)
+
+```
+
 
 # Implement the Solution
 ```{r Anomaly Detection}
+library(anomalize)
 
-sales_anomaly <- sales_forecast %>%
-  time_decompose(Sales)
+sales_anomaly <- sales_ts %>%
+  time_decompose(Sales) %>% 
+  anomalize(remainder,max_anoms = 0.2, alpha=0.05) %>%
+  time_recompose() %>% glimpse()
+
+# Plot
+sales_anomaly %>% plot_anomalies(time_recomposed = TRUE)
+#sales_anomaly %>% plot_anomaly_decomposition(time_recompose = T)
+
 ```
 
-# Challenge the Solution
+
+There is are no Anomalies in our Sales Data 
+

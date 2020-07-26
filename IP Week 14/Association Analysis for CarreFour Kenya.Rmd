@@ -113,4 +113,23 @@ rules<-sort(rules, by="confidence", decreasing=TRUE)
 inspect(rules[1:10])
 ```
 
-# Challenge the Solution
+
+Some transations have upto 20 items but the most frequent transaction have 1 - 5 items.
+The  5 most popular Items are:-
+
+1. mineral water
+2. eggs
+3. spaghetti
+4. french fries
+6. chocolates
+
+The 5 most popular have support at least 10% and 2 more items which are:-
+
+1. green tea 
+2. milk
+
+We have 4 rules with 100% confidence in the association. We can use this association to increase sales in Females customers in the Branch A and B buy identifying which products the Female Customers buy most
+This can also be done for Male Customers in Branch C
+
+
+The Model can also be used to improve the Marketing and Sales of the Product Lines that are not popular with any of the customers in any Branch.
